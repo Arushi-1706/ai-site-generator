@@ -715,9 +715,8 @@ function WebsitePreview({ site, theme }) {
           >
             <div style={styles.sectionEyebrow}>
               {String(index + 1).padStart(2, "0")} /{" "}
-              (section.type || "custom").toUpperCase()
+              {(section.type || "custom").toUpperCase()}
             </div>
-
             <h2 style={styles.sectionTitle}>{section.title}</h2>
 
             {section.description && (
