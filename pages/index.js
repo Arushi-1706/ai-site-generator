@@ -116,6 +116,32 @@ function normalizeSite(raw) {
   };
 }
 
+function escapeHtml(value) {
+  const entities = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  };
+
+  return String(value ?? "").replace(
+    /[&<>"']/g,
+    (character) => entities[character]
+  );
+}
+
+function safeCssColor(value, fallback) {
+  const color = String(value || "").trim();
+
+  const isSafeColor =
+    /^(#[0-9a-f]{3,8}|[a-z]+|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%]+\))$/i.test(
+      color
+    );
+
+  return isSafeColor ? color : fallback;
+}
+
 export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [site, setSite] = useState(demoSite);
@@ -256,6 +282,407 @@ export default function Home() {
       ),
     }));
   }
+  
+  function exportWebsite() {
+    const exportTheme = site.theme || demoSite.theme;
+
+    const background = safeCssColor(
+      exportTheme.backgroundColor,
+      "#080b16"
+    );
+    const accent = safeCssColor(
+      exportTheme.primaryColor,
+      "#a78bfa"
+    );
+    const textColor = safeCssColor(
+      exportTheme.textColor,
+      "#f1f5f9"
+    );
+
+    const sections = Array.isArray(site.sections)
+      ? site.sections
+      : [];
+
+    const projectsIndex = sections.findIndex(
+      (section) => section.type === "projects"
+    );
+
+    const heroTarget =
+      projectsIndex >= 0
+        ? `#section-${projectsIndex}`
+        : "#top";
+
+    const navigation = sections
+      .map((section, index) => {
+        const labels = {
+          about: "About",
+          skills: "Skills",
+          features: "Features",
+          projects: "Projects",
+          contact: "Contact",
+        };
+
+        const label =
+          labels[section.type] || section.title || "Section";
+
+        return `
+          <a href="#section-${index}">
+            ${escapeHtml(label)}
+          </a>
+        `;
+      })
+      .join("");
+
+    const sectionHtml = sections
+      .map((section, index) => {
+        const symbol =
+          section.type === "skills"
+            ? "⌘"
+            : section.type === "projects"
+              ? "↗"
+              : "✳";
+
+        const itemsHtml = (section.items || [])
+          .map((item) => {
+            const url =
+              typeof item.url === "string" &&
+              /^https?:\/\//i.test(item.url.trim())
+                ? item.url.trim()
+                : "";
+
+            const projectLink =
+              section.type === "projects" && url
+                ? `
+                  <a
+                    class="project-link"
+                    href="${escapeHtml(url)}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    View project ↗
+                  </a>
+                `
+                : "";
+
+            return `
+              <article class="card">
+                <div class="symbol">${symbol}</div>
+                <h3>${escapeHtml(item.title || "")}</h3>
+                <p>${escapeHtml(item.description || "")}</p>
+                ${projectLink}
+              </article>
+            `;
+          })
+          .join("");
+
+        const contactHtml =
+          section.type === "contact" && section.email
+            ? `
+              <p class="contact-email">
+                Email:
+                <a href="mailto:${escapeHtml(section.email)}">
+                  ${escapeHtml(section.email)}
+                </a>
+              </p>
+            `
+            : "";
+
+        return `
+          <section class="site-section" id="section-${index}">
+            <div class="section-eyebrow">
+              ${String(index + 1).padStart(2, "0")} /
+              ${escapeHtml((section.type || "custom").toUpperCase())}
+            </div>
+
+            <h2>${escapeHtml(section.title || "")}</h2>
+
+            ${
+              section.description
+                ? `<p class="section-description">${escapeHtml(section.description)}</p>`
+                : ""
+            }
+
+            ${contactHtml}
+
+            ${
+              itemsHtml
+                ? `<div class="item-grid">${itemsHtml}</div>`
+                : ""
+            }
+          </section>
+        `;
+      })
+      .join("");
+
+    const websiteName = site.siteName || "My Website";
+    const websiteDescription = site.description || "";
+
+    const html = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="${escapeHtml(websiteDescription)}">
+  <title>${escapeHtml(websiteName)}</title>
+
+  <style>
+    :root {
+      --background: ${background};
+      --accent: ${accent};
+      --text: ${textColor};
+      --muted: #a4a7b9;
+      --border: #ffffff20;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--background);
+      color: var(--text);
+      font-family: Inter, system-ui, Arial, sans-serif;
+      line-height: 1.7;
+    }
+
+    a {
+      color: var(--accent);
+    }
+
+    .site-nav {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 22px 7%;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    .logo span,
+    .symbol {
+      color: var(--accent);
+    }
+
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+    }
+
+    nav a {
+      font-size: 12px;
+      text-decoration: none;
+    }
+
+    .hero {
+      position: relative;
+      padding: 100px 9% 70px;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .hero::before {
+      position: absolute;
+      z-index: -1;
+      top: 40px;
+      right: 5%;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: var(--accent);
+      filter: blur(100px);
+      opacity: 0.2;
+      content: "";
+    }
+
+    .eyebrow,
+    .section-eyebrow {
+      color: var(--accent);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 2px;
+    }
+
+    .hero h1 {
+      max-width: 780px;
+      margin: 24px 0;
+      font-size: clamp(38px, 6vw, 68px);
+      line-height: 1.08;
+      letter-spacing: -2px;
+      overflow-wrap: anywhere;
+    }
+
+    .hero p,
+    .section-description {
+      max-width: 620px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.9;
+    }
+
+    .hero-button {
+      display: inline-block;
+      margin-top: 18px;
+      padding: 12px 17px;
+      border-radius: 7px;
+      background: var(--accent);
+      color: #080b16;
+      font-size: 12px;
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    .site-section {
+      padding: 65px 7%;
+      border-top: 1px solid var(--border);
+      scroll-margin-top: 20px;
+    }
+
+    .site-section h2 {
+      margin: 15px 0 12px;
+      font-size: clamp(27px, 4vw, 40px);
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+    }
+
+    .item-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 14px;
+      margin-top: 28px;
+    }
+
+    .card {
+      min-width: 0;
+      padding: 20px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #ffffff08;
+      overflow-wrap: anywhere;
+    }
+
+    .symbol {
+      margin-bottom: 15px;
+      font-size: 23px;
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+    }
+
+    .card p,
+    .contact-email {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.8;
+    }
+
+    .project-link {
+      display: inline-block;
+      margin-top: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .site-footer {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 25px 7%;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    @media (max-width: 600px) {
+      .hero {
+        padding: 70px 7% 55px;
+      }
+
+      .site-nav {
+        padding: 18px 7%;
+      }
+
+      .site-section {
+        padding: 45px 7%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="site-nav" id="top">
+    <a class="logo" href="#top">
+      <span>✳</span> ${escapeHtml(websiteName)}
+    </a>
+    <nav>${navigation}</nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="eyebrow">✳ BUILDING WHAT'S NEXT</div>
+
+      <h1>${escapeHtml(site.hero.title || "")}</h1>
+
+      <p>${escapeHtml(site.hero.subtitle || "")}</p>
+
+      ${
+        site.hero.buttonText
+          ? `<a class="hero-button" href="${heroTarget}">${escapeHtml(site.hero.buttonText)} ↗</a>`
+          : ""
+      }
+    </section>
+
+    ${sectionHtml}
+  </main>
+
+  <footer class="site-footer">
+    <span>✳ ${escapeHtml(websiteName)}</span>
+    <span>Designed with curiosity. Built for the future.</span>
+  </footer>
+</body>
+</html>`;
+
+    const blob = new Blob([html], {
+      type: "text/html;charset=utf-8",
+    });
+
+    const objectUrl = URL.createObjectURL(blob);
+    const downloadLink = document.createElement("a");
+
+    const fileName =
+      websiteName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "") || "sitecraft-website";
+
+    downloadLink.href = objectUrl;
+    downloadLink.download = `${fileName}.html`;
+
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    downloadLink.remove();
+
+    window.setTimeout(() => {
+      URL.revokeObjectURL(objectUrl);
+    }, 1000);
+  }
 
   const theme = site.theme || demoSite.theme;
 
@@ -272,16 +699,23 @@ export default function Home() {
         <span style={styles.topLabel}>AI WEBSITE STUDIO</span>
 
         <button
-          style={styles.newButton}
-          onClick={() => {
-            setPrompt("");
-            setSite(demoSite);
-            setError("");
-            setMode("preview");
-          }}
-        >
-          + New project
-        </button>
+  style={styles.exportButton}
+  onClick={exportWebsite}
+>
+  ↓ Export website
+</button>
+
+<button
+  style={styles.newButton}
+  onClick={() => {
+    setPrompt("");
+    setSite(demoSite);
+    setError("");
+    setMode("preview");
+  }}
+>
+  + New project
+</button>
       </header>
 
       <div style={styles.workspace}>
@@ -833,6 +1267,15 @@ const styles = {
     padding: "9px 12px",
     cursor: "pointer",
   },
+  exportButton: {
+  border: "1px solid #51456f",
+  borderRadius: 8,
+  background: "#302645",
+  color: "#f4f0ff",
+  padding: "9px 12px",
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+},
   workspace: {
     display: "grid",
     gridTemplateColumns: "310px minmax(0, 1fr)",
