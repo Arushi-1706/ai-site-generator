@@ -66,17 +66,14 @@ const demoSite = {
         {
           title: "AI Site Generator",
           description:
-            "Turning natural-language ideas into structured website designs.",
+            "An AI-powered website builder that transforms natural-language prompts into editable website previews.",
+          url: "https://ai-site-generator-chi.vercel.app/",
         },
         {
           title: "Weather Vibe Check",
           description:
-            "A weather-inspired web experience built around changing conditions.",
-        },
-        {
-          title: "Security Learning Lab",
-          description:
-            "A concept for exploring defensive security in a safe environment.",
+            "A weather application built with HTML, CSS, and JavaScript to explore current weather conditions.",
+          url: "https://arushi-1706.github.io/weather-vibe-check/",
         },
       ],
     },
@@ -428,9 +425,7 @@ export default function Home() {
               <label style={styles.label}>HERO HEADLINE</label>
               <input
                 value={site.hero.title || ""}
-                onChange={(e) =>
-                  updateHero("title", e.target.value)
-                }
+                onChange={(e) => updateHero("title", e.target.value)}
                 style={styles.editInput}
                 placeholder="Your website headline"
               />
@@ -528,9 +523,7 @@ export default function Home() {
 
                   {section.type === "contact" && (
                     <>
-                      <label style={styles.label}>
-                        CONTACT EMAIL
-                      </label>
+                      <label style={styles.label}>CONTACT EMAIL</label>
                       <input
                         type="email"
                         value={section.email || ""}
@@ -540,6 +533,7 @@ export default function Home() {
                         style={styles.editInput}
                         placeholder="you@example.com"
                       />
+
                       <p style={styles.fieldHint}>
                         Leave blank if you don't want to display an
                         email address.
@@ -602,6 +596,29 @@ export default function Home() {
                         rows={2}
                         placeholder="Item description"
                       />
+
+                      {section.type === "projects" && (
+                        <>
+                          <label style={styles.label}>
+                            PROJECT LINK (OPTIONAL)
+                          </label>
+
+                          <input
+                            type="url"
+                            value={item.url || ""}
+                            onChange={(e) =>
+                              updateItem(i, j, "url", e.target.value)
+                            }
+                            style={styles.editInput}
+                            placeholder="https://example.com"
+                          />
+
+                          <p style={styles.fieldHint}>
+                            Add a URL to show a View project link on
+                            this project's preview card.
+                          </p>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -628,10 +645,7 @@ function WebsitePreview({ site, theme }) {
       }}
     >
       <nav style={styles.siteNav}>
-        <a
-          href="#home"
-          style={{ ...styles.siteLogo, color }}
-        >
+        <a href="#home" style={{ ...styles.siteLogo, color }}>
           <span style={{ color: accent }}>✳</span>{" "}
           {site.siteName}
         </a>
@@ -672,9 +686,7 @@ function WebsitePreview({ site, theme }) {
 
         <h1 style={styles.heroTitle}>{site.hero.title}</h1>
 
-        <p style={styles.heroSubtitle}>
-          {site.hero.subtitle}
-        </p>
+        <p style={styles.heroSubtitle}>{site.hero.subtitle}</p>
 
         {site.hero.buttonText && (
           <a
@@ -688,9 +700,7 @@ function WebsitePreview({ site, theme }) {
           </a>
         )}
 
-        <div style={styles.scrollNote}>
-          SCROLL TO EXPLORE ↓
-        </div>
+        <div style={styles.scrollNote}>SCROLL TO EXPLORE ↓</div>
       </section>
 
       {site.sections.map((section, index) => {
@@ -705,12 +715,10 @@ function WebsitePreview({ site, theme }) {
           >
             <div style={styles.sectionEyebrow}>
               {String(index + 1).padStart(2, "0")} /{" "}
-              {(section.type || "custom").toUpperCase()}
+              (section.type || "custom").toUpperCase()
             </div>
 
-            <h2 style={styles.sectionTitle}>
-              {section.title}
-            </h2>
+            <h2 style={styles.sectionTitle}>{section.title}</h2>
 
             {section.description && (
               <p style={styles.sectionDescription}>
@@ -747,13 +755,25 @@ function WebsitePreview({ site, theme }) {
                           : "✳"}
                     </div>
 
-                    <h3 style={styles.itemTitle}>
-                      {item.title}
-                    </h3>
+                    <h3 style={styles.itemTitle}>{item.title}</h3>
 
                     <p style={styles.itemDescription}>
                       {item.description}
                     </p>
+
+                    {section.type === "projects" && item.url && (
+                      <a
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          ...styles.projectLink,
+                          color: accent,
+                        }}
+                      >
+                        View project ↗
+                      </a>
+                    )}
                   </article>
                 ))}
               </div>
@@ -1096,6 +1116,13 @@ const styles = {
     fontSize: 12,
     lineHeight: 1.8,
     margin: 0,
+  },
+  projectLink: {
+    display: "inline-block",
+    marginTop: 14,
+    fontSize: 12,
+    fontWeight: 700,
+    textDecoration: "none",
   },
   siteFooter: {
     display: "flex",
